@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DO Staffing Executive Dashboard</title>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="vendor/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7f9;
+      --surface: #ffffff;
+      --ink: #17202a;
+      --muted: #64717f;
+      --line: #d9e0e7;
+      --teal: #147a7e;
+      --blue: #315fbb;
+      --coral: #d45d4c;
+      --gold: #b8860b;
+      --green: #287a4d;
+      --shadow: 0 12px 32px rgba(25, 35, 45, 0.08);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    button, input, select {
+      font: inherit;
+    }
+    .app {
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #18232f;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .topbar-inner {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 18px 24px;
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      letter-spacing: 0;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .brand p {
+      margin: 6px 0 0;
+      color: #c8d1da;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+    .brand, .upload-zone {
+      min-width: 0;
+    }
+    .upload-zone {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .link-loader {
+      display: grid;
+      grid-template-columns: minmax(220px, 420px) auto;
+      gap: 8px;
+      min-width: 0;
+    }
+    .link-loader input {
+      min-height: 40px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 9px 11px;
+      min-width: 0;
+    }
+    .link-loader input::placeholder {
+      color: #c8d1da;
+    }
+    .file-label, .icon-button {
+      min-height: 40px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .file-label:hover, .icon-button:hover {
+      background: rgba(255,255,255,.14);
+    }
+    .file-label input {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .status-pill {
+      max-width: 360px;
+      min-width: 0;
+      color: #dce5ec;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    main {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 22px 24px 32px;
+    }
+    .notice {
+      display: none;
+      border: 1px solid #d8c383;
+      background: #fff8df;
+      color: #5f4510;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 18px;
+    }
+    .notice.show {
+      display: block;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 15px;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .kpi .value {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 750;
+      line-height: 1;
+      letter-spacing: 0;
+      margin-top: 6px;
+    }
+    .kpi .sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .filters {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr)) auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .control {
+      display: grid;
+      gap: 5px;
+    }
+    .control label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    select, input[type="search"] {
+      inline-size: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--ink);
+      min-width: 0;
+    }
+    .reset-button {
+      border: 1px solid var(--line);
+      background: #f9fafb;
+      color: var(--ink);
+      border-radius: var(--radius);
+      min-height: 40px;
+      padding: 8px 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .reset-button:hover {
+      background: #eef3f6;
+    }
+    .insights {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .insight {
+      border-left: 4px solid var(--teal);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+    }
+    .insight:nth-child(2) { border-left-color: var(--blue); }
+    .insight:nth-child(3) { border-left-color: var(--coral); }
+    .insight:nth-child(4) { border-left-color: var(--gold); }
+    .insight .name {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .insight .text {
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 15px;
+      min-width: 0;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+    .chart-panel {
+      min-height: 336px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 280px;
+      inline-size: 100%;
+    }
+    .wide {
+      grid-column: 1 / -1;
+    }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      max-height: 420px;
+    }
+    table {
+      border-collapse: collapse;
+      inline-size: 100%;
+      min-width: 900px;
+      background: #fff;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 11px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f0f4f7;
+      z-index: 1;
+      color: #344250;
+      font-weight: 700;
+    }
+    tr:hover td {
+      background: #fbfcfd;
+    }
+    .risk {
+      display: inline-flex;
+      align-items: center;
+      min-width: 70px;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .risk.expired { color: #8f251d; background: #ffe2df; }
+    .risk.soon { color: #8a4a00; background: #ffeac1; }
+    .risk.watch { color: #284f9d; background: #dfeaff; }
+    .risk.ok { color: #1d6a40; background: #dff3e8; }
+    .empty-state {
+      border: 1px dashed #bac6d1;
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 32px 22px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state strong {
+      display: block;
+      color: var(--ink);
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 1180px) {
+      .kpi-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+      .filters { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+      .insights { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .topbar-inner {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+      .upload-zone {
+        justify-content: flex-start;
+      }
+      .link-loader {
+        grid-template-columns: 1fr auto;
+        inline-size: 100%;
+      }
+      .status-pill {
+        flex: 1 1 100%;
+        max-width: 100%;
+      }
+      main { padding: 16px; }
+      .kpi-grid, .filters, .insights {
+        grid-template-columns: 1fr;
+      }
+      .chart-wrap { height: 260px; }
+      .status-pill { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <h1>DO Staffing Executive Dashboard</h1>
+          <p>Non-payroll workforce, vendor mix, project allocation, and contract expiry view</p>
+        </div>
+        <div class="upload-zone">
+          <div class="link-loader">
+            <input id="linkInput" type="url" placeholder="วาง Excel / SharePoint / OneDrive link">
+            <button id="loadLinkButton" class="icon-button" type="button" title="โหลดข้อมูลจาก Link">
+              <i data-lucide="link"></i>
+            </button>
+          </div>
+          <label class="file-label" title="โหลดไฟล์ Excel">
+            <i data-lucide="upload"></i>
+            <span>เลือกไฟล์ Excel</span>
+            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv">
+          </label>
+          <button id="sampleButton" class="icon-button" type="button" title="ล้างข้อมูล">
+            <i data-lucide="eraser"></i>
+          </button>
+          <span id="fileStatus" class="status-pill">ยังไม่ได้โหลดไฟล์</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div id="notice" class="notice"></div>
+
+      <section id="emptyState" class="empty-state">
+        <strong>โหลดไฟล์ DO Staffing เพื่อเริ่มดู Dashboard</strong>
+        วาง Excel / SharePoint / OneDrive link หรือเลือกไฟล์ Excel ที่มีคอลัมน์ Emp ID, Department, Project, Type, Vendor, Status และ End ระบบจะจับหัวตารางให้อัตโนมัติ
+      </section>
+
+      <section id="dashboard" hidden>
+        <div class="kpi-grid">
+          <article class="kpi">
+            <div class="label">Total Headcount</div>
+            <div id="kpiTotal" class="value">0</div>
+            <div id="kpiTotalSub" class="sub">filtered records</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Active</div>
+            <div id="kpiActive" class="value">0</div>
+            <div id="kpiActiveSub" class="sub">current status</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Expire ≤ 90 Days</div>
+            <div id="kpi90" class="value">0</div>
+            <div class="sub">contract watch</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Expire ≤ 180 Days</div>
+            <div id="kpi180" class="value">0</div>
+            <div class="sub">planning horizon</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Departments</div>
+            <div id="kpiDept" class="value">0</div>
+            <div class="sub">staffing spread</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Vendors</div>
+            <div id="kpiVendor" class="value">0</div>
+            <div class="sub">supplier base</div>
+          </article>
+        </div>
+
+        <div class="filters">
+          <div class="control">
+            <label for="departmentFilter">Department</label>
+            <select id="departmentFilter"></select>
+          </div>
+          <div class="control">
+            <label for="typeFilter">Type</label>
+            <select id="typeFilter"></select>
+          </div>
+          <div class="control">
+            <label for="vendorFilter">Vendor</label>
+            <select id="vendorFilter"></select>
+          </div>
+          <div class="control">
+            <label for="expiryFilter">Contract</label>
+            <select id="expiryFilter">
+              <option value="all">ทั้งหมด</option>
+              <option value="30">หมดอายุใน 30 วัน</option>
+              <option value="60">หมดอายุใน 60 วัน</option>
+              <option value="90">หมดอายุใน 90 วัน</option>
+              <option value="180">หมดอายุใน 180 วัน</option>
+              <option value="expired">เลยวันสิ้นสุด</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="searchFilter">Search</label>
+            <input id="searchFilter" type="search" placeholder="ชื่อ, project, manager">
+          </div>
+          <button id="resetFilters" class="reset-button" type="button" title="ล้างตัวกรอง">
+            <i data-lucide="rotate-ccw"></i>
+          </button>
+        </div>
+
+        <div class="insights">
+          <div class="insight">
+            <div class="name">Largest Department</div>
+            <div id="insightDept" class="text">-</div>
+          </div>
+          <div class="insight">
+            <div class="name">Top Vendor</div>
+            <div id="insightVendor" class="text">-</div>
+          </div>
+          <div class="insight">
+            <div class="name">Nearest Renewal Month</div>
+            <div id="insightExpiry" class="text">-</div>
+          </div>
+          <div class="insight">
+            <div class="name">Data Loaded</div>
+            <div id="insightLoaded" class="text">-</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel chart-panel">
+            <h2>Headcount by Department</h2>
+            <div class="chart-wrap"><canvas id="deptChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel">
+            <h2>Type Mix</h2>
+            <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel">
+            <h2>Vendor Distribution</h2>
+            <div class="chart-wrap"><canvas id="vendorChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel">
+            <h2>Job Level</h2>
+            <div class="chart-wrap"><canvas id="levelChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel wide">
+            <h2>Contract Expiry Timeline</h2>
+            <div class="chart-wrap"><canvas id="expiryChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel">
+            <h2>Top Projects</h2>
+            <div class="chart-wrap"><canvas id="projectChart"></canvas></div>
+          </section>
+          <section class="panel chart-panel">
+            <h2>Team Leader Load</h2>
+            <div class="chart-wrap"><canvas id="leaderChart"></canvas></div>
+          </section>
+          <section class="panel wide">
+            <h2>Contract Watchlist</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Project</th>
+                    <th>Team Leader</th>
+                    <th>Type</th>
+                    <th>Vendor</th>
+                    <th>End</th>
+                    <th>Days</th>
+                  </tr>
+                </thead>
+                <tbody id="watchlistBody"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel wide">
+            <h2>Staffing Detail</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Emp ID</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Department</th>
+                    <th>Section</th>
+                    <th>Project</th>
+                    <th>Job Level</th>
+                    <th>Status</th>
+                    <th>End</th>
+                  </tr>
+                </thead>
+                <tbody id="detailBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const charts = {};
+    const DEFAULT_LINK = "https://1drv.ms/x/c/e68d1020148da49c/IQBZ6HKrMr_pRpIuYSgec08gAV1AVWXoWhVjDMJxRoqRwHo?e=IIrdgn";
+    let allRows = [];
+    let loadedMeta = { fileName: "", sheetName: "", loadedAt: null };
+    const today = startOfDay(new Date());
+    const palette = ["#147a7e", "#315fbb", "#d45d4c", "#b8860b", "#287a4d", "#7c5aa6", "#52616f", "#c05f2d", "#5f8d4e", "#8f4b5f"];
+
+    const fieldAliases = {
+      empId: ["Emp ID", "Employee ID", "ID"],
+      name: ["Name - Surname", "Name", "Employee Name"],
+      department: ["Department", "Dept"],
+      section: ["Section"],
+      position: ["Position", "Role"],
+      project: ["Project (FI)", "Project", "Project FI", "Project (DT)"],
+      manager: ["Line Manager", "Manager"],
+      leader: ["Team Leader", "Team Lead"],
+      type: ["Type", "Employment Type"],
+      level: ["Job Level", "Level"],
+      start: ["Start", "Start Current Period", "Starting Date"],
+      currentPeriod: ["Current Period"],
+      end: ["End", "End Date"],
+      vendor: ["Vendor"],
+      status: ["Status"]
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) window.lucide.createIcons();
+      el("linkInput").value = new URLSearchParams(window.location.search).get("link") || DEFAULT_LINK;
+      el("loadLinkButton").addEventListener("click", handleLinkLoad);
+      el("linkInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") handleLinkLoad();
+      });
+      el("fileInput").addEventListener("change", handleFile);
+      el("sampleButton").addEventListener("click", clearData);
+      ["departmentFilter", "typeFilter", "vendorFilter", "expiryFilter", "searchFilter"].forEach((id) => {
+        el(id).addEventListener("input", render);
+      });
+      el("resetFilters").addEventListener("click", resetFilters);
+      loadFromUrlParam();
+    });
+
+    async function handleFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setStatus(`กำลังอ่าน ${file.name}...`);
+      clearNotice();
+      try {
+        const buffer = await file.arrayBuffer();
+        loadWorkbookBuffer(buffer, file.name);
+      } catch (error) {
+        showNotice(error.message || String(error));
+        setStatus("อ่านไฟล์ไม่สำเร็จ");
+      }
+    }
+
+    async function handleLinkLoad() {
+      const address = el("linkInput").value.trim();
+      if (!address) {
+        showNotice("กรุณาใส่ Link address ของไฟล์ Excel");
+        return;
+      }
+      await loadFromLink(address);
+    }
+
+    async function loadFromUrlParam() {
+      const params = new URLSearchParams(window.location.search);
+      const link = params.get("link");
+      const src = params.get("src");
+      if (link) {
+        await loadFromLink(link);
+        return;
+      }
+      if (src) {
+        await loadFromDirectUrl(src, src.split("/").pop() || src);
+        return;
+      }
+      await loadFromLink(DEFAULT_LINK);
+    }
+
+    async function loadFromLink(address) {
+      setStatus(`กำลังอ่าน Link...`);
+      clearNotice();
+      try {
+        const buffer = await fetchWorkbookFromAddress(address);
+        loadWorkbookBuffer(buffer, fileNameFromAddress(address));
+      } catch (error) {
+        showNotice(error.message || String(error));
+        setStatus("อ่านไฟล์ไม่สำเร็จ");
+      }
+    }
+
+    async function loadFromDirectUrl(src, label) {
+      setStatus(`กำลังอ่าน ${label}...`);
+      clearNotice();
+      try {
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`โหลดไฟล์จาก URL ไม่สำเร็จ (${response.status})`);
+        const buffer = await response.arrayBuffer();
+        loadWorkbookBuffer(buffer, label);
+      } catch (error) {
+        showNotice(error.message || String(error));
+        setStatus("อ่านไฟล์ไม่สำเร็จ");
+      }
+    }
+
+    async function fetchWorkbookFromAddress(address) {
+      const candidates = buildDownloadCandidates(address);
+      const errors = [];
+      for (const candidate of candidates) {
+        try {
+          const response = await fetch(candidate.url, { method: "GET", cache: "no-store", credentials: "include" });
+          if (!response.ok) {
+            errors.push(`${candidate.label}: HTTP ${response.status}`);
+            continue;
+          }
+          const buffer = await response.arrayBuffer();
+          if (looksLikeWorkbook(buffer)) return buffer;
+          errors.push(`${candidate.label}: ไม่ใช่ไฟล์ Excel ที่อ่านได้`);
+        } catch (error) {
+          errors.push(`${candidate.label}: ${error.message || error}`);
+        }
+      }
+      throw new Error(`โหลดไฟล์จาก Link ไม่สำเร็จ (${errors.join("; ")}). Browser อาจถูกบล็อกด้วย permission หรือ CORS ของ SharePoint/OneDrive; ให้ตั้งลิงก์เป็น Anyone with the link can download หรือใช้ระบบ Microsoft login/proxy ที่มีสิทธิ์เข้าถึงไฟล์`);
+    }
+
+    function buildDownloadCandidates(address) {
+      const normalized = address.trim();
+      const candidates = [{ label: "direct link", url: normalized }];
+      if (/1drv\.ms|onedrive\.live\.com|sharepoint\.com/i.test(normalized)) {
+        candidates.unshift({ label: "OneDrive shared-link API", url: oneDriveSharedContentUrl(normalized) });
+        const separator = normalized.includes("?") ? "&" : "?";
+        candidates.push({ label: "download flag", url: `${normalized}${separator}download=1` });
+      }
+      return candidates;
+    }
+
+    function oneDriveSharedContentUrl(address) {
+      const encoded = btoa(address).replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+      return `https://api.onedrive.com/v1.0/shares/u!${encoded}/root/content`;
+    }
+
+    function looksLikeWorkbook(buffer) {
+      if (!buffer || buffer.byteLength < 4) return false;
+      const bytes = new Uint8Array(buffer.slice(0, 8));
+      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+      const isOle = bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
+      return isZip || isOle;
+    }
+
+    function fileNameFromAddress(address) {
+      try {
+        const url = new URL(address);
+        const lastPath = decodeURIComponent(url.pathname.split("/").filter(Boolean).pop() || "Excel link");
+        return lastPath.includes(".") ? lastPath : "Excel link";
+      } catch {
+        return "Excel link";
+      }
+    }
+
+    function loadWorkbookBuffer(buffer, fileName) {
+      const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+      const parsed = parseWorkbook(workbook);
+      if (!parsed.rows.length) {
+        throw new Error("ไม่พบแถวข้อมูลพนักงานที่อ่านได้");
+      }
+      allRows = parsed.rows;
+      loadedMeta = { fileName, sheetName: parsed.sheetName, loadedAt: new Date() };
+      populateFilters(allRows);
+      el("emptyState").hidden = true;
+      el("dashboard").hidden = false;
+      setStatus(`${fileName} • ${parsed.sheetName} • ${allRows.length.toLocaleString()} records`);
+      render();
+    }
+
+    function parseWorkbook(workbook) {
+      let best = { rows: [], sheetName: workbook.SheetNames[0] || "" };
+      for (const sheetName of workbook.SheetNames) {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "", raw: true });
+        const headerIndex = detectHeaderRow(rows);
+        if (headerIndex < 0) continue;
+        const headers = rows[headerIndex].map((value, index) => cleanHeader(value) || `Column ${index + 1}`);
+        const records = rows.slice(headerIndex + 1).map((row) => rowToRecord(headers, row)).map(normalizeRecord).filter(isStaffRow);
+        if (records.length > best.rows.length) best = { rows: records, sheetName };
+      }
+      return best;
+    }
+
+    function detectHeaderRow(rows) {
+      for (let i = 0; i < Math.min(rows.length, 40); i += 1) {
+        const normalized = rows[i].map((value) => cleanHeader(value).toLowerCase());
+        const hasIdentity = normalized.some((v) => v.includes("emp id")) || normalized.some((v) => v.includes("name"));
+        const hasOrg = normalized.some((v) => v === "department") || normalized.some((v) => v === "section");
+        const hasContract = normalized.some((v) => v === "end") || normalized.some((v) => v === "vendor") || normalized.some((v) => v === "status");
+        if (hasIdentity && hasOrg && hasContract) return i;
+      }
+      return -1;
+    }
+
+    function rowToRecord(headers, row) {
+      return headers.reduce((record, header, index) => {
+        record[header] = row[index] ?? "";
+        return record;
+      }, {});
+    }
+
+    function normalizeRecord(record) {
+      const get = (key) => {
+        const names = fieldAliases[key] || [];
+        const found = names.find((name) => Object.prototype.hasOwnProperty.call(record, name));
+        return found ? record[found] : "";
+      };
+      const endDate = parseDate(get("end"));
+      const startDate = parseDate(get("start"));
+      const normalized = {
+        empId: text(get("empId")),
+        name: text(get("name")),
+        department: fallbackText(get("department"), "ไม่ระบุ Department"),
+        section: fallbackText(get("section"), "ไม่ระบุ Section"),
+        position: fallbackText(get("position"), "ไม่ระบุ Position"),
+        project: fallbackText(get("project"), "ไม่ระบุ Project"),
+        manager: fallbackText(get("manager"), "ไม่ระบุ Manager"),
+        leader: fallbackText(get("leader"), "ไม่ระบุ Leader"),
+        type: fallbackText(get("type"), "ไม่ระบุ Type"),
+        level: fallbackText(get("level"), "ไม่ระบุ Level"),
+        vendor: fallbackText(get("vendor"), "ไม่ระบุ Vendor"),
+        status: fallbackText(get("status"), "ไม่ระบุ Status"),
+        startDate,
+        endDate
+      };
+      normalized.daysRemaining = endDate ? diffDays(today, startOfDay(endDate)) : null;
+      normalized.tenureYears = startDate ? Math.max(0, diffDays(startOfDay(startDate), today) / 365.25) : null;
+      return normalized;
+    }
+
+    function isStaffRow(row) {
+      if (!row.empId || !row.name) return false;
+      const hasStaffingCore = row.department !== "ไม่ระบุ Department" && row.type !== "ไม่ระบุ Type" && row.vendor !== "ไม่ระบุ Vendor";
+      if (!hasStaffingCore && row.status === "ไม่ระบุ Status") return false;
+      const values = [row.department, row.project, row.status, row.vendor].join(" ").toLowerCase();
+      return !values.includes("nan");
+    }
+
+    function populateFilters(rows) {
+      fillSelect("departmentFilter", rows.map((row) => row.department), "ทุก Department");
+      fillSelect("typeFilter", rows.map((row) => row.type), "ทุก Type");
+      fillSelect("vendorFilter", rows.map((row) => row.vendor), "ทุก Vendor");
+      el("expiryFilter").value = "all";
+      el("searchFilter").value = "";
+    }
+
+    function fillSelect(id, values, label) {
+      const select = el(id);
+      const unique = [...new Set(values)].filter(Boolean).sort((a, b) => a.localeCompare(b));
+      select.innerHTML = `<option value="all">${escapeHtml(label)}</option>` + unique.map((value) => `<option value="${escapeAttr(value)}">${escapeHtml(value)}</option>`).join("");
+    }
+
+    function getFilteredRows() {
+      const department = el("departmentFilter").value;
+      const type = el("typeFilter").value;
+      const vendor = el("vendorFilter").value;
+      const expiry = el("expiryFilter").value;
+      const query = el("searchFilter").value.trim().toLowerCase();
+      return allRows.filter((row) => {
+        if (department !== "all" && row.department !== department) return false;
+        if (type !== "all" && row.type !== type) return false;
+        if (vendor !== "all" && row.vendor !== vendor) return false;
+        if (["30", "60", "90", "180"].includes(expiry) && !isExpiringWithin(row, Number(expiry))) return false;
+        if (expiry === "expired" && !(row.daysRemaining !== null && row.daysRemaining < 0)) return false;
+        if (query) {
+          const haystack = [row.empId, row.name, row.department, row.section, row.position, row.project, row.manager, row.leader, row.type, row.level, row.vendor, row.status].join(" ").toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+    }
+
+    function render() {
+      const rows = getFilteredRows();
+      renderKpis(rows);
+      renderInsights(rows);
+      renderCharts(rows);
+      renderTables(rows);
+    }
+
+    function isExpiringWithin(row, days) {
+      return row.daysRemaining !== null && row.daysRemaining >= 0 && row.daysRemaining <= days;
+    }
+
+    function renderKpis(rows) {
+      const active = rows.filter((row) => row.status.toLowerCase() === "active").length;
+      const exp90 = rows.filter((row) => isExpiringWithin(row, 90)).length;
+      const exp180 = rows.filter((row) => isExpiringWithin(row, 180)).length;
+      setText("kpiTotal", rows.length);
+      setText("kpiActive", active);
+      setText("kpi90", exp90);
+      setText("kpi180", exp180);
+      setText("kpiDept", countDistinct(rows, "department"));
+      setText("kpiVendor", countDistinct(rows, "vendor"));
+      setText("kpiTotalSub", `${rows.length.toLocaleString()} of ${allRows.length.toLocaleString()} loaded records`);
+      setText("kpiActiveSub", `${percentage(active, rows.length)} of filtered records`);
+    }
+
+    function renderInsights(rows) {
+      const dept = topEntries(countBy(rows, "department"), 1)[0];
+      const vendor = topEntries(countBy(rows, "vendor"), 1)[0];
+      const expiryBuckets = countByDateMonth(rows.filter((row) => row.daysRemaining !== null && row.daysRemaining >= 0), "endDate");
+      const nearestMonth = Object.keys(expiryBuckets).sort()[0];
+      setText("insightDept", dept ? `${dept.label} (${dept.value})` : "-");
+      setText("insightVendor", vendor ? `${vendor.label} (${vendor.value})` : "-");
+      setText("insightExpiry", nearestMonth ? `${formatMonthKey(nearestMonth)} (${expiryBuckets[nearestMonth]})` : "-");
+      setText("insightLoaded", loadedMeta.loadedAt ? `${loadedMeta.fileName} • ${formatDateTime(loadedMeta.loadedAt)}` : "-");
+    }
+
+    function renderCharts(rows) {
+      barChart("deptChart", "deptChart", topEntries(countBy(rows, "department"), 10), "Headcount", true);
+      doughnutChart("typeChart", "typeChart", topEntries(countBy(rows, "type"), 8));
+      barChart("vendorChart", "vendorChart", topEntries(countBy(rows, "vendor"), 10), "Headcount", false);
+      barChart("levelChart", "levelChart", sortLevels(countBy(rows, "level")), "Headcount", true);
+      expiryChart(rows);
+      barChart("projectChart", "projectChart", topEntries(countBy(rows, "project"), 10), "Headcount", true);
+      barChart("leaderChart", "leaderChart", topEntries(countBy(rows, "leader"), 10), "Headcount", true);
+    }
+
+    function barChart(canvasId, key, entries, label, horizontal) {
+      const labels = entries.map((entry) => entry.label);
+      const values = entries.map((entry) => entry.value);
+      buildChart(key, canvasId, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label,
+            data: values,
+            backgroundColor: values.map((_, index) => palette[index % palette.length]),
+            borderRadius: 6,
+            maxBarThickness: 34
+          }]
+        },
+        options: {
+          indexAxis: horizontal ? "y" : "x",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.raw.toLocaleString()} คน` } } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: "#eef2f5" }, ticks: { precision: 0 } },
+            y: { beginAtZero: true, grid: { display: !horizontal, color: "#eef2f5" }, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
+    function doughnutChart(canvasId, key, entries) {
+      buildChart(key, canvasId, {
+        type: "doughnut",
+        data: {
+          labels: entries.map((entry) => entry.label),
+          datasets: [{
+            data: entries.map((entry) => entry.value),
+            backgroundColor: entries.map((_, index) => palette[index % palette.length]),
+            borderColor: "#ffffff",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "62%",
+          plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: (item) => `${item.label}: ${item.raw.toLocaleString()} คน` } } }
+        }
+      });
+    }
+
+    function expiryChart(rows) {
+      const buckets = countByDateMonth(rows.filter((row) => row.endDate), "endDate");
+      const labels = monthKeysAround(rows).map(formatMonthKey);
+      const keys = monthKeysAround(rows);
+      buildChart("expiryChart", "expiryChart", {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Contracts ending",
+            data: keys.map((key) => buckets[key] || 0),
+            borderColor: "#d45d4c",
+            backgroundColor: "rgba(212, 93, 76, 0.18)",
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.raw.toLocaleString()} contracts` } } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef2f5" } }
+          }
+        }
+      });
+    }
+
+    function renderTables(rows) {
+      const watchRows = rows
+        .filter((row) => row.daysRemaining !== null && row.daysRemaining <= 180)
+        .sort((a, b) => a.daysRemaining - b.daysRemaining)
+        .slice(0, 80);
+      el("watchlistBody").innerHTML = watchRows.length ? watchRows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${escapeHtml(row.department)}</td>
+          <td>${escapeHtml(row.project)}</td>
+          <td>${escapeHtml(row.leader)}</td>
+          <td>${escapeHtml(row.type)}</td>
+          <td>${escapeHtml(row.vendor)}</td>
+          <td>${formatDate(row.endDate)}</td>
+          <td>${riskBadge(row.daysRemaining)}</td>
+        </tr>
+      `).join("") : `<tr><td colspan="8">ไม่มีรายการสัญญาในช่วงที่เลือก</td></tr>`;
+
+      const detailRows = rows.slice().sort((a, b) => a.department.localeCompare(b.department) || a.name.localeCompare(b.name)).slice(0, 200);
+      el("detailBody").innerHTML = detailRows.length ? detailRows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.empId)}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${escapeHtml(row.position)}</td>
+          <td>${escapeHtml(row.department)}</td>
+          <td>${escapeHtml(row.section)}</td>
+          <td>${escapeHtml(row.project)}</td>
+          <td>${escapeHtml(row.level)}</td>
+          <td>${escapeHtml(row.status)}</td>
+          <td>${formatDate(row.endDate)}</td>
+        </tr>
+      `).join("") : `<tr><td colspan="9">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    }
+
+    function riskBadge(days) {
+      if (days === null) return `<span class="risk ok">N/A</span>`;
+      if (days < 0) return `<span class="risk expired">${Math.abs(days)}d late</span>`;
+      if (days <= 90) return `<span class="risk soon">${days}d</span>`;
+      if (days <= 180) return `<span class="risk watch">${days}d</span>`;
+      return `<span class="risk ok">${days}d</span>`;
+    }
+
+    function buildChart(key, canvasId, config) {
+      if (charts[key]) charts[key].destroy();
+      charts[key] = new Chart(el(canvasId), config);
+    }
+
+    function resetFilters() {
+      ["departmentFilter", "typeFilter", "vendorFilter"].forEach((id) => { el(id).value = "all"; });
+      el("expiryFilter").value = "all";
+      el("searchFilter").value = "";
+      render();
+    }
+
+    function clearData() {
+      allRows = [];
+      Object.values(charts).forEach((chart) => chart.destroy());
+      Object.keys(charts).forEach((key) => delete charts[key]);
+      el("dashboard").hidden = true;
+      el("emptyState").hidden = false;
+      el("fileInput").value = "";
+      clearNotice();
+      setStatus("ยังไม่ได้โหลดไฟล์");
+    }
+
+    function countBy(rows, key) {
+      return rows.reduce((acc, row) => {
+        const value = row[key] || "ไม่ระบุ";
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function countByDateMonth(rows, dateKey) {
+      return rows.reduce((acc, row) => {
+        const date = row[dateKey];
+        if (!date) return acc;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function topEntries(counts, limit) {
+      return Object.entries(counts)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
+        .slice(0, limit);
+    }
+
+    function sortLevels(counts) {
+      const order = ["S1", "S2", "S3", "S4", "M1", "M2", "M3"];
+      return Object.entries(counts)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => {
+          const ai = order.indexOf(a.label);
+          const bi = order.indexOf(b.label);
+          if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          return a.label.localeCompare(b.label);
+        });
+    }
+
+    function monthKeysAround(rows) {
+      const dates = rows.map((row) => row.endDate).filter(Boolean).sort((a, b) => a - b);
+      if (!dates.length) {
+        return [...Array(12)].map((_, i) => addMonths(today, i)).map(monthKey);
+      }
+      const start = new Date(dates[0].getFullYear(), dates[0].getMonth(), 1);
+      const end = new Date(dates[dates.length - 1].getFullYear(), dates[dates.length - 1].getMonth(), 1);
+      const keys = [];
+      for (let cursor = start; cursor <= end && keys.length < 24; cursor = addMonths(cursor, 1)) {
+        keys.push(monthKey(cursor));
+      }
+      return keys;
+    }
+
+    function monthKey(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function addMonths(date, months) {
+      return new Date(date.getFullYear(), date.getMonth() + months, 1);
+    }
+
+    function countDistinct(rows, key) {
+      return new Set(rows.map((row) => row[key]).filter(Boolean)).size;
+    }
+
+    function percentage(part, total) {
+      if (!total) return "0%";
+      return `${Math.round((part / total) * 100)}%`;
+    }
+
+    function parseDate(value) {
+      if (!value) return null;
+      if (value instanceof Date && !Number.isNaN(value.valueOf())) {
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+      }
+      if (typeof value === "number" && value > 20000) {
+        const date = new Date(1899, 11, 30);
+        date.setDate(date.getDate() + Math.floor(value));
+        return Number.isNaN(date.valueOf()) ? null : date;
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.valueOf()) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+
+    function diffDays(start, end) {
+      return Math.round((end - start) / 86400000);
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function formatDate(date) {
+      if (!date) return "-";
+      return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function formatDateTime(date) {
+      return date.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatMonthKey(key) {
+      const [year, month] = key.split("-").map(Number);
+      return new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    }
+
+    function cleanHeader(value) {
+      return text(value).replace(/\s+/g, " ").trim();
+    }
+
+    function text(value) {
+      if (value === null || value === undefined) return "";
+      return String(value).trim();
+    }
+
+    function fallbackText(value, fallback) {
+      const cleaned = text(value);
+      return cleaned ? cleaned : fallback;
+    }
+
+    function setText(id, value) {
+      el(id).textContent = typeof value === "number" ? value.toLocaleString() : value;
+    }
+
+    function setStatus(message) {
+      el("fileStatus").textContent = message;
+    }
+
+    function showNotice(message) {
+      el("notice").textContent = message;
+      el("notice").classList.add("show");
+    }
+
+    function clearNotice() {
+      el("notice").textContent = "";
+      el("notice").classList.remove("show");
+    }
+
+    function escapeHtml(value) {
+      return text(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+  </script>
+</body>
+</html>
